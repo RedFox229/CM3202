@@ -3,12 +3,15 @@ import pywt.data
 import numpy as np
 from PIL import Image
 from scipy.ndimage import filters
+import cv2
 
 return_lst = []
 fingerprint = []
 
 def denoise(image_set):
     for image in image_set:
+        image = check_orientation(image)
+        print(f"image size: {image.size}")
         coeffs = pywt.dwt2(image, 'db4')
         LL, (LH, HL, HH) = coeffs
         LH = np.array(LH)
@@ -43,8 +46,9 @@ def main(image_set):
     fingerprint.clear()
 
     for image in image_set:
+        print(f"image size: {image.size}")
         img = np.asarray(image)
-        return_lst.append(noise_extract(img))
+        return_lst.append(noise_extract(img[:800, :1000]))
 
     average_fingerprint(return_lst)
     return fingerprint
@@ -156,3 +160,15 @@ def threshold(wlet_coeff_energy_avg: np.ndarray, noise_var: float) -> np.ndarray
     res = wlet_coeff_energy_avg - noise_var
     return (res + np.abs(res)) / 2
 
+def check_orientation(image):
+    width, height = image.size
+    if width < height:
+        print(f"Original Size: {image.size}")
+        rotated_image = image.rotate(90, expand=True) # This angle is based on the assumption most cameras have the shutter button on the right so teh camera is usually rotated 90 degrees counter clockwise to take portrait photos.
+        print(f"Rotated size: {rotated_image.size}")
+        return rotated_image
+    elif width > height:
+        print("Image Already Portrait")
+        return image
+    else:
+        return image # This creates an issue as we cannot confirm the orientation the image should be in using this method.

@@ -2,8 +2,8 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import random
-from PIL import Image, ImageTk
-from PNRU_Extraction import main
+from PIL import Image, ImageTk, ImageOps
+from PNRU_Extraction import main, check_orientation
 
 # Setting the size the image thumbnails will have
 size = 180, 180
@@ -23,7 +23,9 @@ def open_set_sample():
         display_image_sample(file_path)
         img_dataset = list(file_path) # Converting the tuple to a list for iteration
         for image in img_dataset:
-            image_dataset.append(Image.open(image)) # Adding the Pillow 'Image' types to a list
+            hold = Image.open(image)
+            hold = ImageOps.exif_transpose(hold)
+            image_dataset.append(check_orientation(hold)) # Adding the Pillow 'Image' types to a list
     else:
          messagebox.showerror('File Error', 'Error: Please Select Min. 1 Valid Image')
 
@@ -38,7 +40,12 @@ def open_target_image():
         display_target_image(file_path)
         img_dataset = list(file_path) # Converting the tuple to a list for iteration
         for image in img_dataset:
-            target_image.append(Image.open(image)) # Adding the Pillow 'Image' types to a list  
+            hold = Image.open(image)
+            hold1 = ImageOps.exif_transpose(hold)
+            hold2 = check_orientation(hold1)
+            print(f"hold2 size: {hold2.size}")
+            print("-----------------------")
+            target_image.append(hold2) # Adding the Pillow 'Image' types to a list  
     else:
         messagebox.showerror('Warning', 'No Image Selected (Optional)')     
 
@@ -64,6 +71,7 @@ def display_image_sample(file_path):
 
     for item in images:
         image =Image.open(item)
+        image = ImageOps.exif_transpose(image)
         image = image.resize((size), Image.Resampling.LANCZOS)
         image = ImageTk.PhotoImage(image)
         label = tk.Label(random_sample_frame, image=image)
@@ -82,6 +90,7 @@ def display_target_image(file_path):
 
     for item in images:
         image =Image.open(item)
+        image = ImageOps.exif_transpose(image)
         image = image.resize((size), Image.Resampling.LANCZOS)
         image = ImageTk.PhotoImage(image)
         label = tk.Label(target_image_frame, image=image)
@@ -146,7 +155,9 @@ def compute_test():
 def compute_greyscale():
     greyscale_images = []
     for img in target_image:
+        print(img.size)
         greyscale_images.append(img.convert('L'))
+    print(f" grey scale size: {greyscale_images[0].size}")
     return greyscale_images
 
 # This  fuction meerly calls the denoising function in another module
