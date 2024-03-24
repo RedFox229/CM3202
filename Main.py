@@ -21,7 +21,7 @@ def open_set_sample():
     reset_sample()
     reset_content()
     # returns a tuple of the file paths
-    file_path = filedialog.askopenfilenames(title="Select Images To Be Analysed", filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.ico")])
+    file_path = filedialog.askopenfilenames(title="Select Control Images", filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.ico")])
     if file_path:
         display_image_sample(file_path)
         img_dataset = list(file_path) # Converting the tuple to a list for iteration
@@ -38,7 +38,7 @@ def open_target_image():
     reset_target()
     reset_content()
     # returns a tuple of the file paths
-    file_path = filedialog.askopenfilenames(title="Select Target Images", filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.ico")])
+    file_path = filedialog.askopenfilenames(title="Select Suspect Images", filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.ico")])
     if file_path:
         display_target_image(file_path)
         img_dataset = list(file_path) # Converting the tuple to a list for iteration
@@ -191,18 +191,18 @@ def denoise_target():
 
 # This function create all the labels used within the interface
 def create_labels():
-    random_display_label = tk.Label(random_sample_frame, text="Random Sample Of Image Set", font=("Helvetica", 12))
+    random_display_label = tk.Label(random_sample_frame, text="Random Sample Of Control Set", font=("Helvetica", 12))
     random_display_label.grid(row=0, column=1, sticky="nsew", columnspan=4) 
 
-    target_image_label = tk.Label(target_image_frame, text="Random Sample Of Target Set", font=("Helvetica", 12))
+    target_image_label = tk.Label(target_image_frame, text="Random Sample Of Suspect Set", font=("Helvetica", 12))
     target_image_label.grid(row=0, column=1, sticky="nsew", columnspan=4) 
 
 # This function creates all the buttons for the interface
 def create_buttons():
-    open_analysis_set_btn = tk.Button(main_button_frame, text="Select Analysis Set", command=open_set_sample)
+    open_analysis_set_btn = tk.Button(main_button_frame, text="Select Control Set", command=open_set_sample)
     open_analysis_set_btn.grid(row=1, column=0)  
 
-    open_target_image_btn = tk.Button(main_button_frame, text="Select Analysis Image", command=open_target_image)
+    open_target_image_btn = tk.Button(main_button_frame, text="Select Suspect Image", command=open_target_image)
     open_target_image_btn.grid(row=1, column=1)  
 
     reset_btn = tk.Button(main_button_frame, text="Reset Selection", command=reset_all)
