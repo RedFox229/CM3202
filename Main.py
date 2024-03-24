@@ -161,7 +161,7 @@ def compute_greyscale(set):
     print(f" grey scale size: {greyscale_images[0].size}")
     return greyscale_images
 
-# This  fuction meerly calls the denoising function in another module
+# This fuction meerly calls the denoising function in another module
 def denoise_target():
     if (len(target_image)>0): # Checking that there is an image selected for computing
         image_set = compute_greyscale(target_image)

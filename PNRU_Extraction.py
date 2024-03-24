@@ -14,21 +14,18 @@ return_lst = []
 fingerprint = []
 prnu = []
 
-def denoise(image_set):
+def main(image_set):
+    return_lst.clear()
+    fingerprint.clear()
+    prnu.clear()
+
     for image in image_set:
-        image = check_orientation(image)
         print(f"image size: {image.size}")
-        coeffs = pywt.dwt2(image, 'db4')
-        LL, (LH, HL, HH) = coeffs
-        LH = np.array(LH)
-        # print(LH)
-        HL = np.array(HL)
-        # print(HL)
-        HH = np.array(HH)
-        # print(HH)
-        image_final = np.add(LH, HL, HH)
-        return_lst.append(image_final)
-    return average_fingerprint(return_lst)
+        img = np.asarray(image)
+        return_lst.append(noise_extract(img[:800, :1000]))
+
+    average_fingerprint(return_lst)
+    return fingerprint, prnu
 
 def average_fingerprint(fingerprint_list):
     hold = np.array(fingerprint_list[0])
@@ -48,18 +45,7 @@ def average_fingerprint(fingerprint_list):
     fingerprint.append(returned_image)
     #return fingerprint
 
-def main(image_set):
-    return_lst.clear()
-    fingerprint.clear()
-    prnu.clear()
-
-    for image in image_set:
-        print(f"image size: {image.size}")
-        img = np.asarray(image)
-        return_lst.append(noise_extract(img[:800, :1000]))
-
-    average_fingerprint(return_lst)
-    return fingerprint, prnu
+# Below is the code for Noise Extraction
 
 def noise_extract(im: np.ndarray, levels: int = 4, sigma: float = 5) -> np.ndarray:
     """
