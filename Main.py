@@ -4,6 +4,7 @@ from tkinter import filedialog, messagebox
 import random
 from PIL import Image, ImageTk, ImageOps
 from PNRU_Extraction import main, check_orientation
+from Cross_Correlation_Functions import aligned_cc, pce, crosscorr_2d
 
 # Setting the size the image thumbnails will have
 size = 180, 180
@@ -156,9 +157,9 @@ def compute_test():
 def compute_greyscale(set):
     greyscale_images = []
     for img in set:
-        print(img.size)
+        #print(img.size)
         greyscale_images.append(img.convert('L'))
-    print(f" grey scale size: {greyscale_images[0].size}")
+    #print(f" grey scale size: {greyscale_images[0].size}")
     return greyscale_images
 
 # This fuction meerly calls the denoising function in another module
@@ -180,6 +181,13 @@ def denoise_target():
         prnu_fingerprints.append(denoised[1])
     else:
         messagebox.showerror('Computation Error', 'Error: Please Select Control Image First') # pop up error box
+
+    #cross_cor = aligned_cc(prnu_fingerprints[0], prnu_fingerprints[1])
+    fp_1 = prnu_fingerprints[0]
+    fp_2 = prnu_fingerprints[1]
+    cross_cor = crosscorr_2d(fp_1[0], fp_2[0])
+    pce_val = pce(cross_cor)
+    print(f"PCE {pce_val['cc']}")
 
 # This function create all the labels used within the interface
 def create_labels():

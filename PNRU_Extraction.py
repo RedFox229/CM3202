@@ -20,7 +20,7 @@ def main(image_set):
     prnu.clear()
 
     for image in image_set:
-        print(f"image size: {image.size}")
+        #print(f"image size: {image.size}")
         img = np.asarray(image)
         return_lst.append(noise_extract(img[:800, :1000]))
 
@@ -35,12 +35,12 @@ def average_fingerprint(fingerprint_list):
     average = np.divide(hold, len(return_lst))
     prnu.append(average)
 
-    print("Average: ")
-    checksum = 0
-    for i in average:
-        checksum += sum(i)
-    print(checksum)
-    print(sum(average))
+    # print("Average: ")
+    # checksum = 0
+    # for i in average:
+    #     checksum += sum(i)
+    # print(checksum)
+    # print(sum(average))
     returned_image = Image.fromarray(average, mode='L')
     fingerprint.append(returned_image)
     #return fingerprint
@@ -115,7 +115,7 @@ def noise_extract(im: np.ndarray, levels: int = 4, sigma: float = 5) -> np.ndarr
 
     W = W[:im.shape[0], :im.shape[1]]
 
-    print(type(W))
+    #print(type(W))
 
     return W
 
@@ -160,12 +160,12 @@ def threshold(wlet_coeff_energy_avg: np.ndarray, noise_var: float) -> np.ndarray
 def check_orientation(image):
     width, height = image.size
     if width < height:
-        print(f"Original Size: {image.size}")
+        # print(f"Original Size: {image.size}")
         rotated_image = image.rotate(90, expand=True) # This angle is based on the assumption most cameras have the shutter button on the right so teh camera is usually rotated 90 degrees counter clockwise to take portrait photos.
-        print(f"Rotated size: {rotated_image.size}")
+        # print(f"Rotated size: {rotated_image.size}")
         return rotated_image
     elif width > height:
-        print("Image Already Landscape")
+        # print("Image Already Landscape")
         return image
     else:
         return image # This creates an issue as we cannot confirm the orientation the image should be in using this method.
