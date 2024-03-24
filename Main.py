@@ -5,6 +5,7 @@ import random
 from PIL import Image, ImageTk, ImageOps
 from PNRU_Extraction import main, check_orientation
 from Cross_Correlation_Functions import aligned_cc, pce, crosscorr_2d
+from scipy.signal import correlate2d
 
 # Setting the size the image thumbnails will have
 size = 180, 180
@@ -167,9 +168,9 @@ def denoise_target():
     if (len(target_image)>0): # Checking that there is an image selected for computing
         image_set = compute_greyscale(target_image)
         denoised = main(image_set)
-        display_computed_image(denoised[0], (600,600))
-        prnu_fingerprints_display.append(denoised[0])
-        prnu_fingerprints.append(denoised[1])
+        #display_computed_image(denoised[0], (600,600))
+        prnu_fingerprints_display.append(denoised[0][0])
+        prnu_fingerprints.append(denoised[1][0])
     else:
         messagebox.showerror('Computation Error', 'Error: Please Select Analysis Image First') # pop up error box
     
@@ -177,17 +178,22 @@ def denoise_target():
         image_set = compute_greyscale(image_dataset)
         denoised = main(image_set)
         #display_computed_image(denoised[0], (600,600))
-        prnu_fingerprints_display.append(denoised[0])
-        prnu_fingerprints.append(denoised[1])
+        prnu_fingerprints_display.append(denoised[0][0])
+        prnu_fingerprints.append(denoised[1][0])
     else:
         messagebox.showerror('Computation Error', 'Error: Please Select Control Image First') # pop up error box
 
+
+    display_computed_image(prnu_fingerprints_display, (600,600))
     #cross_cor = aligned_cc(prnu_fingerprints[0], prnu_fingerprints[1])
     fp_1 = prnu_fingerprints[0]
     fp_2 = prnu_fingerprints[1]
-    cross_cor = crosscorr_2d(fp_1[0], fp_2[0])
+    cross_cor = crosscorr_2d(fp_1, fp_2)
     pce_val = pce(cross_cor)
-    print(f"PCE {pce_val['cc']}")
+    print(f"Peak: {pce_val['peak']} PCE: {pce_val['pce']} CC: {pce_val['cc']}")
+
+    prnu_fingerprints.clear()
+    prnu_fingerprints_display.clear()
 
 # This function create all the labels used within the interface
 def create_labels():

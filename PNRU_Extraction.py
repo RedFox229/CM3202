@@ -25,25 +25,16 @@ def main(image_set):
         return_lst.append(noise_extract(img[:800, :1000]))
 
     average_fingerprint(return_lst)
-    return fingerprint, prnu
+    return fingerprint, prnu # [Fingerprint (Pil image)], prnu (np array)
 
 def average_fingerprint(fingerprint_list):
-    hold = np.array(fingerprint_list[0])
-    for img_rep in fingerprint_list[1:]:
-        x = np.array(img_rep)
-        hold = np.add(hold,x)
-    average = np.divide(hold, len(return_lst))
+    
+    average = np.mean(fingerprint_list, axis=0)
     prnu.append(average)
 
-    # print("Average: ")
-    # checksum = 0
-    # for i in average:
-    #     checksum += sum(i)
-    # print(checksum)
-    # print(sum(average))
     returned_image = Image.fromarray(average, mode='L')
     fingerprint.append(returned_image)
-    #return fingerprint
+
 
 # Below is the code for Noise Extraction
 
