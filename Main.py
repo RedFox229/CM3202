@@ -11,6 +11,8 @@ size = 180, 180
 # Global store of images
 target_image = [] # This will store the Pillow 'Image' type of the target image
 image_dataset = [] # This will store all of the images in the dataset as Pillow 'Image' Types
+prnu_fingerprints_display = [] # [suspect image (Pil Img), Control image (Pil Img)] This will store the two image fingerprints for diplay purposes, the first will be the suspect image print and the second the control images
+prnu_fingerprints = [] # [suspect image (np.array), Control image (np.array)] This will store the raw fingerprints for processing purposes.
 
 # This allows the user to select images from their file system to build the image set that will be analysed
 def open_set_sample():
@@ -41,11 +43,10 @@ def open_target_image():
         img_dataset = list(file_path) # Converting the tuple to a list for iteration
         for image in img_dataset:
             hold = Image.open(image)
-            hold1 = ImageOps.exif_transpose(hold)
-            hold2 = check_orientation(hold1)
-            print(f"hold2 size: {hold2.size}")
-            print("-----------------------")
-            target_image.append(hold2) # Adding the Pillow 'Image' types to a list  
+            hold = ImageOps.exif_transpose(hold)
+            # print(f"hold2 size: {hold2.size}")
+            # print("-----------------------")
+            target_image.append(check_orientation(hold)) # Adding the Pillow 'Image' types to a list  
     else:
         messagebox.showerror('Warning', 'No Image Selected (Optional)')     
 
@@ -152,9 +153,9 @@ def compute_test():
         messagebox.showerror('Computation Error', 'Error: Please Select Analysis Image First') # pop up error box
 
 # This is a support function used to convert the images to greyscale
-def compute_greyscale():
+def compute_greyscale(set):
     greyscale_images = []
-    for img in target_image:
+    for img in set:
         print(img.size)
         greyscale_images.append(img.convert('L'))
     print(f" grey scale size: {greyscale_images[0].size}")
@@ -163,13 +164,22 @@ def compute_greyscale():
 # This  fuction meerly calls the denoising function in another module
 def denoise_target():
     if (len(target_image)>0): # Checking that there is an image selected for computing
-        image_set = compute_greyscale()
-        # image = target_image[0]
-        # image = image.convert('L')
+        image_set = compute_greyscale(target_image)
         denoised = main(image_set)
-        display_computed_image(denoised, (600,600))
+        display_computed_image(denoised[0], (600,600))
+        prnu_fingerprints_display.append(denoised[0])
+        prnu_fingerprints.append(denoised[1])
     else:
         messagebox.showerror('Computation Error', 'Error: Please Select Analysis Image First') # pop up error box
+    
+    if (len(image_dataset)>0): # Checking that there is an image selected for computing
+        image_set = compute_greyscale(image_dataset)
+        denoised = main(image_set)
+        #display_computed_image(denoised[0], (600,600))
+        prnu_fingerprints_display.append(denoised[0])
+        prnu_fingerprints.append(denoised[1])
+    else:
+        messagebox.showerror('Computation Error', 'Error: Please Select Control Image First') # pop up error box
 
 # This function create all the labels used within the interface
 def create_labels():

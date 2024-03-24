@@ -4,9 +4,15 @@ import numpy as np
 from PIL import Image
 from scipy.ndimage import filters
 import cv2
+from multiprocessing import Pool, cpu_count
+from tqdm import tqdm
+from numpy.fft import fft2, ifft2
+from scipy.ndimage import filters
+from sklearn.metrics import roc_curve, auc
 
 return_lst = []
 fingerprint = []
+prnu = []
 
 def denoise(image_set):
     for image in image_set:
@@ -30,6 +36,7 @@ def average_fingerprint(fingerprint_list):
         x = np.array(img_rep)
         hold = np.add(hold,x)
     average = np.divide(hold, len(return_lst))
+    prnu.append(average)
 
     print("Average: ")
     checksum = 0
@@ -44,6 +51,7 @@ def average_fingerprint(fingerprint_list):
 def main(image_set):
     return_lst.clear()
     fingerprint.clear()
+    prnu.clear()
 
     for image in image_set:
         print(f"image size: {image.size}")
@@ -51,7 +59,7 @@ def main(image_set):
         return_lst.append(noise_extract(img[:800, :1000]))
 
     average_fingerprint(return_lst)
-    return fingerprint
+    return fingerprint, prnu
 
 def noise_extract(im: np.ndarray, levels: int = 4, sigma: float = 5) -> np.ndarray:
     """
@@ -63,13 +71,17 @@ def noise_extract(im: np.ndarray, levels: int = 4, sigma: float = 5) -> np.ndarr
     :return: noise residual
     """
 
+    # This is just a load of debugging stuff and doesnt do anything
     assert (im.dtype == np.uint8)
     assert (im.ndim in [2, 3])
 
+    # casts the image to a np.float32 datatype
     im = im.astype(np.float32)
 
+    # Noise variance which is locked at the square of 5, i believe this was in one of the papers
     noise_var = sigma ** 2
 
+    # setting the image shape for a greyscale image
     if im.ndim == 2:
         im.shape += (1,)
 
@@ -149,7 +161,6 @@ def wiener_adaptive(x: np.ndarray, noise_var: float, **kwargs) -> np.ndarray:
 
     return x
 
-
 def threshold(wlet_coeff_energy_avg: np.ndarray, noise_var: float) -> np.ndarray:
     """
     Noise variance theshold as from Binghamton toolbox.
@@ -168,7 +179,7 @@ def check_orientation(image):
         print(f"Rotated size: {rotated_image.size}")
         return rotated_image
     elif width > height:
-        print("Image Already Portrait")
+        print("Image Already Landscape")
         return image
     else:
         return image # This creates an issue as we cannot confirm the orientation the image should be in using this method.
