@@ -39,13 +39,30 @@ def create_fold(folds):
         folded_data.append(current_fold)
     return folded_data
 
+def create_fixed_size_fold(fold_size):
+    folded_data = []
+    random.shuffle(paths)
+    fold_count = len(labels)//fold_size
+    print(f"{fold_count} Folds Will Be Created, Each With {fold_size} Entries.")
+    print("-----------------------------------------------------------------------------------------------------------")
+    if fold_count > 0:
+        counter = 0
+        for i in range(fold_count):
+            current_fold = []
+            for i in range(fold_size):
+                current_fold.append(paths[counter])
+                counter += 1
+            folded_data.append(current_fold)
+    return folded_data
+
+
 def get_fold_stats(folds):
      for fold in folds:
         count = [0,0,0,0,0,0]
         for image in fold:
             device = labels[image]
             count[devices[device]] += 1
-        print(f"D3500: {count[0]} Drone: {count[1]}, iPhone 8: {count[2]}, iPhone 13: {count[3]}, Samsung Galaxy S7 A: {count[4]}, Samsung Galaxy S7 B: {count[5]}") 
+        print(f"| D3500: {count[0]} | Drone: {count[1]} | iPhone 8: {count[2]} | iPhone 13: {count[3]} | Samsung Galaxy S7 A: {count[4]} | Samsung Galaxy S7 B: {count[5]} |") 
         
 
 def choose_suspect_image(folds):
@@ -75,18 +92,22 @@ def open_suspect(path):
     hold = hold.convert('L')
     suspect_image = check_orientation(hold)
     suspect_image = np.asarray(suspect_image)
-    return suspect_image[:800, :1000]
+    return suspect_image[:1000, :800]
 
 def average(list): 
-    return sum(list) / len(list)
+    if len(list) > 0:
+        return sum(list) / len(list)
+    else:
+        return 0
 
 def main():
+    correct = 0
+    incorrect = 0
     load_data()
-    folds = create_fold(5)
+    folds = create_fixed_size_fold(100)
     get_fold_stats(folds)
-    folds = choose_suspect_image(folds)
-     # folds[0] will contain ['suspect image path', [list of control image paths]]
-    print("--------------------------------------------------------------------------------------------------")
+    folds = choose_suspect_image(folds) # folds[0] will contain ['suspect image path', [list of control image paths]]
+    print("-----------------------------------------------------------------------------------------------------------")
     for fold in folds:
         control_fingerprints = []
         scores = [[],[],[],[],[],[]]
@@ -102,6 +123,7 @@ def main():
         counter = 1
         for image in control_images:
             image = np.asarray(image)
+            image = image[:1000, :800]
             control_fingerprints.append(prnu(image))
             #print(f"Progress: {round((counter/prog) * 100, 2)}%")
             counter+=1
@@ -118,7 +140,7 @@ def main():
             #print(f" Cross Correlation Progress: {round((tracker/prog) * 100, 2)}%")
             tracker+=1
         
-        for i in range(5):
+        for i in range(6):
             avg_scores.append(average(scores[i]))
         
         index_max = avg_scores.index(max(avg_scores))
@@ -126,5 +148,17 @@ def main():
         print(f"Suspect Device : {labels[suspect_image_path]}  \nProgram Predicted Match: {predicted_identity}")
         print(f"Scores: \nD3500: {average(scores[0])}   Drone: {average(scores[1])}   iPhone 8: {average(scores[2])}   iPhone 13: {average(scores[3])}   Samsung Galaxy S7 A: {average(scores[4])}   Samsung Galaxy S7 B: {average(scores[5])}")
         print("--------------------------------------------------------------------------------------------------------------------------------------------------------------")
+        if labels[suspect_image_path] == predicted_identity:
+            correct += 1
+        else:
+            incorrect +=1
+    return correct, incorrect
 
-main()
+correct = 0
+incorrect = 0
+for i in range(20):
+    scores = main()
+    correct += scores[0]
+    incorrect += scores[1]
+    succesrate = (correct/(correct+incorrect))*100
+    print(f"Success Rate: {succesrate}%")
