@@ -25,7 +25,7 @@ def main(image_set):
         return_lst.append(noise_extract(img[:800, :1000]))
 
     average_fingerprint(return_lst)
-    return fingerprint, prnu # [Fingerprint (Pil image)], prnu (np array)
+    return fingerprint, prnu # [Fingerprint (Pil image)], prnu (np array)]
 
 def average_fingerprint(fingerprint_list):
     
