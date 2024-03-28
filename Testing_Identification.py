@@ -5,11 +5,13 @@ from PNRU_Extraction import noise_extract as prnu
 from PNRU_Extraction import check_orientation
 from Cross_Correlation_Functions import pce, crosscorr_2d
 import numpy as np
+import openpyxl as pyxl
 
 
 labels = {} # Path : Device
 paths = []
 devices = {'D3500': 0, 'Drone': 1, 'iPhone 8' : 2, 'iPhone13' : 3, 'Samsung Galaxy S7 A' : 4, 'Samsung Galaxy S7 B' : 5, 0 : 'D3500', 1 : 'Drone', 2 : 'iPhone 8', 3 : 'iPhone 13', 4 : 'Samsung Galaxy S7 A', 5 : 'Samsung Galaxy S7 B' }
+full_dataset = [['Image Path', 'Actual Class', 'Predicted Class']]
 
 def load_data():
     with open(r"C:\Users\Elliot\Documents\Comp Sci Year 3\Final Year Project\Classified_Data.csv", mode="r") as csv_file:
@@ -109,6 +111,7 @@ def main():
     folds = choose_suspect_image(folds) # folds[0] will contain ['suspect image path', [list of control image paths]]
     print("-----------------------------------------------------------------------------------------------------------")
     for fold in folds:
+        to_write = [] # path (of suspect image), actual class, predicted class, class scores
         control_fingerprints = []
         scores = [[],[],[],[],[],[]]
         avg_scores = []
@@ -152,6 +155,8 @@ def main():
             correct += 1
         else:
             incorrect +=1
+        to_write.append(suspect_image_path, labels[suspect_image_path], predicted_identity, average(scores[0]), average(scores[1]), average(scores[2]), average(scores[3]), average(scores[4]), average(scores[5]))
+        full_dataset.append(to_write)
     return correct, incorrect
 
 correct = 0
@@ -162,3 +167,14 @@ for i in range(20):
     incorrect += scores[1]
     succesrate = (correct/(correct+incorrect))*100
     print(f"Success Rate: {succesrate}%")
+
+workbook = pyxl.load_workbook('existing_workbook.xlsx')
+sheet = workbook.active
+
+for row_index, row_data in enumerate(full_dataset, start=1):
+    for column_index, value in enumerate(row_data, start=1):
+        sheet.cell(row=row_index, column=column_index).value = value
+
+workbook.save('output.xlsx')
+
+
