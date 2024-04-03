@@ -20,6 +20,17 @@ def load_data():
             labels[row[0]] = row[1]
             paths.append(row[0])
 
+def load_equal_data(dataset_size):
+    devices_count = {'D3500': 0, 'Drone': 0, 'iPhone 8' : 0, 'iPhone13' : 0, 'Samsung Galaxy S7 A' : 0, 'Samsung Galaxy S7 B' : 0}
+    with open(r"C:\Users\Elliot\Documents\Comp Sci Year 3\Final Year Project\Classified_Data.csv", mode="r") as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        for row in csv_reader:
+            if devices_count[row[1]] < dataset_size:
+                labels[row[0]] = row[1]
+                paths.append(row[0])
+                devices_count[row[1]] +=1
+
+
 def create_fold(folds):
     folded_data = []
     random.shuffle(paths)
@@ -58,6 +69,39 @@ def create_fixed_size_fold(fold_size):
     return folded_data
 
 
+def create_equal_sized_folds(fold_size = 25, device_data_quant = 50):
+    folded_data = []
+    random.shuffle(paths)
+    load_equal_data(device_data_quant) # 50 images of each devices
+    # this will create a fold total size of 25*6= 150 images per fold
+    this_paths = paths.copy()
+    random.shuffle(this_paths)
+    fold_quant = device_data_quant//fold_size # 2
+
+    print(f"{fold_quant} Folds Will Be Created, Each With {fold_size*6} Entries.")
+    print("-----------------------------------------------------------------------------------------------------------")
+
+    if fold_quant > 0:
+        for i in range(fold_quant):
+            counter = 0
+            devices_count = {'D3500': 0, 'Drone': 0, 'iPhone 8' : 0, 'iPhone13' : 0, 'Samsung Galaxy S7 A' : 0, 'Samsung Galaxy S7 B' : 0}
+            current_fold = []
+            for image in this_paths:
+                if (sum(devices_count.values())) < 150:
+                    if devices_count[labels[this_paths[counter]]] < fold_size:
+                        current_fold.append(this_paths[counter])
+                        devices_count[labels[this_paths[counter]]] += 1
+                        counter += 1
+                    else:
+                        counter+=1
+                else:
+                    break
+            for i in current_fold[:]:
+                if i in this_paths:
+                    this_paths.remove(i)
+            folded_data.append(current_fold)
+    return folded_data
+
 def get_fold_stats(folds):
      for fold in folds:
         count = [0,0,0,0,0,0]
@@ -66,7 +110,6 @@ def get_fold_stats(folds):
             count[devices[device]] += 1
         print(f"| D3500: {count[0]} | Drone: {count[1]} | iPhone 8: {count[2]} | iPhone 13: {count[3]} | Samsung Galaxy S7 A: {count[4]} | Samsung Galaxy S7 B: {count[5]} |") 
         
-
 def choose_suspect_image(folds):
     # Do things
     new_fold = []
@@ -101,12 +144,31 @@ def average(list):
         return sum(list) / len(list)
     else:
         return 0
+    
+def check_upper_bound(): 
+    load_data()
+    fold = [paths[1], paths[0]]
+    print(paths[1])
+    suspect_image_path = fold[0]
+    control_images_paths = fold[1]
+    suspect_image = open_suspect(suspect_image_path)
+    control_images = open_suspect(control_images_paths)
+
+    suspect_prnu = prnu(suspect_image)
+    control_prnu = prnu(control_images)
+
+    cross_cor = crosscorr_2d(suspect_prnu, control_prnu)
+    pce_val = pce(cross_cor)
+    print(pce_val['cc'])
+
 
 def main():
     correct = 0
     incorrect = 0
     load_data()
+    #load_equal_data(50)
     folds = create_fixed_size_fold(100)
+    #folds = create_equal_sized_folds()
     get_fold_stats(folds)
     folds = choose_suspect_image(folds) # folds[0] will contain ['suspect image path', [list of control image paths]]
     print("-----------------------------------------------------------------------------------------------------------")
@@ -153,28 +215,31 @@ def main():
         print("--------------------------------------------------------------------------------------------------------------------------------------------------------------")
         if labels[suspect_image_path] == predicted_identity:
             correct += 1
+            verdict = "Correct"
         else:
             incorrect +=1
-        to_write.append(suspect_image_path, labels[suspect_image_path], predicted_identity, average(scores[0]), average(scores[1]), average(scores[2]), average(scores[3]), average(scores[4]), average(scores[5]))
-        full_dataset.append(to_write)
+            verdict = "Incorrect"
+        to_write.append([suspect_image_path, labels[suspect_image_path], predicted_identity, average(scores[0]), average(scores[1]), average(scores[2]), average(scores[3]), average(scores[4]), average(scores[5]), verdict])
+        full_dataset.append(to_write[0])
     return correct, incorrect
 
 correct = 0
 incorrect = 0
-for i in range(20):
+for i in range(50):
     scores = main()
     correct += scores[0]
     incorrect += scores[1]
     succesrate = (correct/(correct+incorrect))*100
     print(f"Success Rate: {succesrate}%")
+    full_dataset.append(['Batch Accuracy :', succesrate])
 
-workbook = pyxl.load_workbook('existing_workbook.xlsx')
+workbook = pyxl.load_workbook('test_data.xlsx')
 sheet = workbook.active
 
 for row_index, row_data in enumerate(full_dataset, start=1):
     for column_index, value in enumerate(row_data, start=1):
         sheet.cell(row=row_index, column=column_index).value = value
 
-workbook.save('output.xlsx')
+workbook.save('test_data.xlsx')
 
 
