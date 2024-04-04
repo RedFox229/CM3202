@@ -1,11 +1,16 @@
 # Required imports for interface and image processing
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, simpledialog
 import random
 from PIL import Image, ImageTk, ImageOps
 from PNRU_Extraction import main, check_orientation
-from Cross_Correlation_Functions import aligned_cc, pce, crosscorr_2d
+from Cross_Correlation_Functions import pce, crosscorr_2d
+from Device_Identification import main as ident_main
 from scipy.signal import correlate2d
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure 
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  
+NavigationToolbar2Tk) 
 
 # Setting the size the image thumbnails will have
 size = 180, 180
@@ -92,6 +97,7 @@ def display_target_image(file_path):
     reset_target() # This will clear the displayed thumbnails
 
     for item in images:
+        print(item)
         image =Image.open(item)
         image = ImageOps.exif_transpose(image)
         image = image.resize((size), Image.Resampling.LANCZOS)
@@ -195,6 +201,73 @@ def denoise_target():
     prnu_fingerprints.clear()
     prnu_fingerprints_display.clear()
 
+# This function is used for the main body of this project
+def identify_device():
+    # print(devices_count)
+    device_names = []
+    device_images=[]
+    suspect_images = []
+    program_data = {}
+
+    while True:
+        suspect_name = simpledialog.askstring(title= f"Suspect Device", prompt=f"Suspect Device Name TESTING:")
+        suspect_path = filedialog.askopenfilenames(title=f"Select Suspect Image(s)", filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.ico")])
+        if suspect_path:
+            suspect_images.append(list(suspect_path))
+            display_target_image(suspect_images[0])
+            break
+        else:
+            messagebox.showerror('File Error', 'Error: Please Select Min. 1 Valid Image')
+
+    devices_count = simpledialog.askinteger(title="Number Of Devices", prompt="Please enter the number of control devices:")
+
+    for i in range(devices_count):
+        while True:
+            device_name = simpledialog.askstring(title= f"Device #{i+1} Name", prompt=f"Enter Device {i+1} Name:")
+            if device_name in device_names:
+                messagebox.showerror('Upload Error', f'The name {device_name} has already been used!')
+            elif len(device_name) < 1:
+                messagebox.showerror('Upload Error', 'The name cannot be blank!')
+            else:
+                device_names.append(device_name)
+                file_path = filedialog.askopenfilenames(title=f"Select {device_name} Images", filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.ico")])
+                if file_path:
+                    img_dataset = list(file_path)
+                    for img in img_dataset:
+                        device_images.append(img)
+                    program_data[device_name]=img_dataset
+                else:
+                    messagebox.showerror('File Error', 'Error: Please Select Min. 1 Valid Image')
+                break
+        display_image_sample(device_images)
+    while True:
+        test_runs = simpledialog.askinteger(title="Number Of Test Rounds", prompt="Please enter the number of rounds of testing desired \n(Minimum 50 Recommended):")
+        if test_runs == 0:
+            messagebox.showerror('Quantity Error!', 'The Quantity Must Be Greater Than 0')
+        else:
+            break
+    # print(device_names)
+    # print(device_images)
+    # print(program_data)
+    print("----------------------------------- Device Identification Below ---------------------------------------")
+    scores = ident_main(device_names, devices_count, program_data, test_runs, suspect_images, suspect_name)
+    # plt.bar(device_names, scores)
+    # plt.grid()
+    # plt.show()
+    plot(device_names, scores)
+
+def plot(device_names, scores):
+    fig = Figure(figsize = (7, 4)) 
+    plot1 = fig.add_subplot(111)
+    plot1.set_title('Suspect Device Likelihood')
+    plot1.grid()
+    plot1.set_xlabel("Device")
+    plot1.set_ylabel("Match Likelihood")
+    plot1.bar(device_names, scores)
+    canvas = FigureCanvasTkAgg(fig, master = content_frame)   
+    canvas.draw()
+    canvas.get_tk_widget().pack() 
+
 # This function create all the labels used within the interface
 def create_labels():
     random_display_label = tk.Label(random_sample_frame, text="Random Sample Of Control Set", font=("Helvetica", 12))
@@ -219,6 +292,9 @@ def create_buttons():
 
     denoise_btn = tk.Button(main_button_frame, text="Denoise (WIP)", command=denoise_target)
     denoise_btn.grid(row=1, column=4)
+
+    identify_btn = tk.Button(main_button_frame, text="Identify Device", command=identify_device)
+    identify_btn.grid(row=1, column=5)
 
 # This function resets all of the thumbnails and storage lists for data selected in the program
 def reset_all():
