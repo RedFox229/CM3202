@@ -139,8 +139,10 @@ def calculate(device_names, number_of_devices, program_dataset, suspect_image_pa
         control_fingerprints = []
         suspect_fingerprints = []
         scores = []
+        pce_store = []
         for i in range(number_of_devices):
             scores.append([])
+            pce_store.append([])
         avg_scores = []
         suspect_image_path = suspect_image_paths[0]
         control_images_paths = fold
@@ -166,6 +168,7 @@ def calculate(device_names, number_of_devices, program_dataset, suspect_image_pa
             pce_val = pce(cross_cor)
             pos = devices[labels[control_images_paths[count]]]
             scores[pos].append(pce_val['cc'])
+            pce_store[pos].append(pce_val['pce'])
             count += 1
             #print(f" Cross Correlation Progress: {round((tracker/prog) * 100, 2)}%")
             tracker+=1
@@ -192,15 +195,15 @@ def calculate(device_names, number_of_devices, program_dataset, suspect_image_pa
         # plt.bar(device_names, avg_scores)
         # plt.grid()
         # plt.show()
-    return avg_scores
+    return avg_scores, pce_store, scores
 
 
 def main(device_names, number_of_devices, program_dataset, test_runs, suspect_image_paths):
     run_average = np.zeros(number_of_devices)
     for i in range(test_runs):
-        avg_scores = calculate(device_names, number_of_devices, program_dataset, suspect_image_paths)
+        avg_scores, pce, scores = calculate(device_names, number_of_devices, program_dataset, suspect_image_paths)
         np_avg_scores = np.array(avg_scores)
         run_average = run_average + np_avg_scores
     final_scores = run_average/test_runs
     final_scores = final_scores.tolist()
-    return final_scores
+    return final_scores, pce, scores
