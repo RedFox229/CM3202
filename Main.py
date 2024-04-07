@@ -9,8 +9,7 @@ from Device_Identification import main as ident_main
 from scipy.signal import correlate2d
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure 
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  
-NavigationToolbar2Tk) 
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg) 
 
 # Setting the size the image thumbnails will have
 size = 180, 180
@@ -143,7 +142,10 @@ def reset_sample():
 # This function is used to clear the contents of the main application frame
 def reset_content():
     for label in content_labels:
-        label.destroy()
+        if type(label) == FigureCanvasTkAgg:
+            label.get_tk_widget().destroy()
+        else:
+            label.destroy()
 
 # This function is used to clear the thumbnails of the target images sample
 def reset_target():
@@ -204,14 +206,15 @@ def denoise_target():
 # This function is used for the main body of this project
 def identify_device():
     # print(devices_count)
+    reset_all()
     device_names = []
     device_images=[]
     suspect_images = []
     program_data = {}
 
+    # This lets the user choose their suspect image
     while True:
-        suspect_name = simpledialog.askstring(title= f"Suspect Device", prompt=f"Suspect Device Name TESTING:")
-        suspect_path = filedialog.askopenfilenames(title=f"Select Suspect Image(s)", filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.ico")])
+        suspect_path = filedialog.askopenfilenames(title=f"Select Suspect Image", filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.ico")])
         if suspect_path:
             suspect_images.append(list(suspect_path))
             display_target_image(suspect_images[0])
@@ -221,6 +224,7 @@ def identify_device():
 
     devices_count = simpledialog.askinteger(title="Number Of Devices", prompt="Please enter the number of control devices:")
 
+    # User input for each device in their desired dataset
     for i in range(devices_count):
         while True:
             device_name = simpledialog.askstring(title= f"Device #{i+1} Name", prompt=f"Enter Device {i+1} Name:")
@@ -240,31 +244,39 @@ def identify_device():
                     messagebox.showerror('File Error', 'Error: Please Select Min. 1 Valid Image')
                 break
         display_image_sample(device_images)
+
     while True:
         test_runs = simpledialog.askinteger(title="Number Of Test Rounds", prompt="Please enter the number of rounds of testing desired \n(Minimum 50 Recommended):")
         if test_runs == 0:
             messagebox.showerror('Quantity Error!', 'The Quantity Must Be Greater Than 0')
         else:
             break
-    # print(device_names)
-    # print(device_images)
-    # print(program_data)
-    print("----------------------------------- Device Identification Below ---------------------------------------")
-    scores = ident_main(device_names, devices_count, program_data, test_runs, suspect_images, suspect_name)
-    # plt.bar(device_names, scores)
-    # plt.grid()
-    # plt.show()
-    plot(device_names, scores)
 
+    # Calls the function to calculate the PRNU values and Cross Correlate the results
+    scores = ident_main(device_names, devices_count, program_data, test_runs, suspect_images)
+
+    # Work out algorithm chosen suspect device
+    index_max = scores.index(max(scores))
+    suspected_device_name = device_names[index_max]
+
+    # Plots the data on a graph
+    plot(device_names, scores)
+    
+    # Creates the label that states the suspected device
+    suspect_device_label = tk.Label(content_frame, text=f"The program predicts the suspect device is: {suspected_device_name}", font=("Helvetica", 16))
+    suspect_device_label.pack()
+
+# This function is used for plotting the graph of the PRNU Values
 def plot(device_names, scores):
     fig = Figure(figsize = (7, 4)) 
     plot1 = fig.add_subplot(111)
     plot1.set_title('Suspect Device Likelihood')
     plot1.grid()
-    plot1.set_xlabel("Device")
-    plot1.set_ylabel("Match Likelihood")
+    plot1.set_xlabel("Device Name")
+    plot1.set_ylabel("Cross Correlation Value")
     plot1.bar(device_names, scores)
-    canvas = FigureCanvasTkAgg(fig, master = content_frame)   
+    canvas = FigureCanvasTkAgg(fig, master = content_frame)
+    content_labels.append(canvas)   
     canvas.draw()
     canvas.get_tk_widget().pack() 
 
@@ -278,23 +290,23 @@ def create_labels():
 
 # This function creates all the buttons for the interface
 def create_buttons():
-    open_analysis_set_btn = tk.Button(main_button_frame, text="Select Control Set", command=open_set_sample)
-    open_analysis_set_btn.grid(row=1, column=0)  
+    # open_analysis_set_btn = tk.Button(main_button_frame, text="Select Control Set", command=open_set_sample)
+    # open_analysis_set_btn.grid(row=1, column=0)  
 
-    open_target_image_btn = tk.Button(main_button_frame, text="Select Suspect Image", command=open_target_image)
-    open_target_image_btn.grid(row=1, column=1)  
+    # open_target_image_btn = tk.Button(main_button_frame, text="Select Suspect Image", command=open_target_image)
+    # open_target_image_btn.grid(row=1, column=1)  
 
-    reset_btn = tk.Button(main_button_frame, text="Reset Selection", command=reset_all)
-    reset_btn.grid(row=1, column=2)
+    identify_btn = tk.Button(main_button_frame, text="Identify Device", command=identify_device, height= 2)
+    identify_btn.grid(row=1, column=0)
 
-    compute_btn = tk.Button(main_button_frame, text="Compute (Greyscale)", command=compute_test)
-    compute_btn.grid(row=1, column=3)
+    reset_btn = tk.Button(main_button_frame, text="Reset Selection", command=reset_all, height= 2)
+    reset_btn.grid(row=1, column=1)
 
-    denoise_btn = tk.Button(main_button_frame, text="Denoise (WIP)", command=denoise_target)
-    denoise_btn.grid(row=1, column=4)
+    # compute_btn = tk.Button(main_button_frame, text="Compute (Greyscale)", command=compute_test)
+    # compute_btn.grid(row=1, column=3)
 
-    identify_btn = tk.Button(main_button_frame, text="Identify Device", command=identify_device)
-    identify_btn.grid(row=1, column=5)
+    # denoise_btn = tk.Button(main_button_frame, text="Denoise (WIP)", command=denoise_target)
+    # denoise_btn.grid(row=1, column=4)
 
 # This function resets all of the thumbnails and storage lists for data selected in the program
 def reset_all():
@@ -306,7 +318,7 @@ def reset_all():
     target_image.clear()
     image_dataset.clear()
 
-# Does thing for Tkinter
+# Creates the data structures used to store Tkinter labels
 all_labels = []
 sample_labels = []
 target_labels = []
@@ -314,14 +326,14 @@ content_labels = []
 root = tk.Tk()
 
 # Set window title
-root.title("Image Analysis Prototype")
+root.title("Mobile Device Fingerprinting/Identification Porgram")
 
 # Set app to full screen on startup
-width= root.winfo_screenwidth() 
-height= root.winfo_screenheight()
-root.geometry("%dx%d" % (width, height))
+root.geometry("1000x700")
+root.state("zoomed")
 
 # Below are all of the frames used for this application
+
 # This is the frame for all of the buttons in the top of the application
 main_button_frame = tk.Frame(root, relief="flat", borderwidth=1)
 main_button_frame.grid(row=0, column=0, sticky = "nw", columnspan=2)
