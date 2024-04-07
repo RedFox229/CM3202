@@ -14,6 +14,9 @@ return_lst = []
 fingerprint = []
 prnu = []
 
+class ArgumentError(Exception):
+    pass
+
 def main(image_set):
     return_lst.clear()
     fingerprint.clear()
@@ -22,7 +25,8 @@ def main(image_set):
     for image in image_set:
         #print(f"image size: {image.size}")
         img = np.asarray(image)
-        return_lst.append(noise_extract(img[:800, :1000]))
+        img = cut_ctr(img, 800, 1000, 2)
+        return_lst.append(noise_extract(img))
 
     average_fingerprint(return_lst)
     return fingerprint, prnu # [Fingerprint (Pil image)], prnu (np array)]
@@ -160,3 +164,26 @@ def check_orientation(image):
         return image
     else:
         return image # This creates an issue as we cannot confirm the orientation the image should be in using this method.
+    
+def cut_ctr(array: np.ndarray, sizes: tuple) -> np.ndarray:
+    """
+    Cut a multi-dimensional array at its center, according to sizes
+    :param array: multidimensional array
+    :param sizes: tuple of the same length as array.ndim
+    :return: multidimensional array, center cut
+    """
+    array = array.copy()
+    if not (array.ndim == len(sizes)):
+        raise ArgumentError('array.ndim must be equal to len(sizes)')
+    for axis in range(array.ndim):
+        axis_target_size = sizes[axis]
+        axis_original_size = array.shape[axis]
+        if axis_target_size > axis_original_size:
+            raise ValueError(
+                'Can\'t have target size {} for axis {} with original size {}'.format(axis_target_size, axis,
+                                                                                      axis_original_size))
+        elif axis_target_size < axis_original_size:
+            axis_start_idx = (axis_original_size - axis_target_size) // 2
+            axis_end_idx = axis_start_idx + axis_target_size
+            array = np.take(array, np.arange(axis_start_idx, axis_end_idx), axis)
+    return array
