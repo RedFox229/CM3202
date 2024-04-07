@@ -2,7 +2,7 @@ import csv
 import random
 from PIL import Image, ImageOps
 from PNRU_Extraction import noise_extract as prnu
-from PNRU_Extraction import check_orientation
+from PNRU_Extraction import check_orientation, cut_ctr
 from Cross_Correlation_Functions import pce, crosscorr_2d
 import numpy as np
 import openpyxl as pyxl
@@ -110,7 +110,8 @@ def open_suspect(path):
     hold = hold.convert('L')
     suspect_image = check_orientation(hold)
     suspect_image = np.asarray(suspect_image)
-    return suspect_image[:1000, :800]
+    suspect_image = cut_ctr(suspect_image, (suspect_image.shape))
+    return suspect_image
 
 def average(list): 
     if len(list) > 0:
@@ -155,7 +156,7 @@ def calculate(device_names, number_of_devices, program_dataset, suspect_image_pa
         counter = 1
         for image in control_images:
             image = np.asarray(image)
-            image = image[:1000, :800]
+            image = cut_ctr(image, (image.shape))
             control_fingerprints.append(prnu(image))
             #print(f"Progress: {round((counter/prog) * 100, 2)}%")
             counter+=1
@@ -179,7 +180,7 @@ def calculate(device_names, number_of_devices, program_dataset, suspect_image_pa
         index_max = avg_scores.index(max(avg_scores))
         predicted_identity = (devices[index_max])
         print(f"Suspect Device : Unknown \nProgram Predicted Match: {predicted_identity}")
-        print(avg_scores)
+        #print(avg_scores)
         # print(f"Scores: \nD3500: {average(scores[0])}   Drone: {average(scores[1])}   iPhone 8: {average(scores[2])}   iPhone 13: {average(scores[3])}   Samsung Galaxy S7 A: {average(scores[4])}   Samsung Galaxy S7 B: {average(scores[5])}")
         # print("--------------------------------------------------------------------------------------------------------------------------------------------------------------")
         # if suspect_name == predicted_identity:
