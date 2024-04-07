@@ -10,6 +10,7 @@ from scipy.signal import correlate2d
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg) 
+import numpy as np
 
 # Setting the size the image thumbnails will have
 size = 180, 180
@@ -253,28 +254,77 @@ def identify_device():
             break
 
     # Calls the function to calculate the PRNU values and Cross Correlate the results
-    scores = ident_main(device_names, devices_count, program_data, test_runs, suspect_images)
+    scores, pce, raw_scores = ident_main(device_names, devices_count, program_data, test_runs, suspect_images)
 
     # Work out algorithm chosen suspect device
     index_max = scores.index(max(scores))
     suspected_device_name = device_names[index_max]
 
     # Plots the data on a graph
-    plot(device_names, scores)
+    print(pce)
+    plot(device_names, scores, pce, raw_scores)
     
     # Creates the label that states the suspected device
     suspect_device_label = tk.Label(content_frame, text=f"The program predicts the suspect device is: {suspected_device_name}", font=("Helvetica", 16))
     suspect_device_label.pack()
 
 # This function is used for plotting the graph of the PRNU Values
-def plot(device_names, scores):
-    fig = Figure(figsize = (7, 4)) 
-    plot1 = fig.add_subplot(111)
+def plot(device_names, scores, pce, raw_scores):
+
+    fig = Figure(figsize = (20, 5))
+
+    # Plot 1 for CC Values 
+    plot1 = fig.add_subplot(131)
     plot1.set_title('Suspect Device Likelihood')
     plot1.grid()
     plot1.set_xlabel("Device Name")
     plot1.set_ylabel("Cross Correlation Value")
     plot1.bar(device_names, scores)
+
+    # Plot 2 for PCE scores
+    plot2_names = []
+
+    for name in device_names:
+        for i in range(len(pce[0])):
+            plot2_names.append(name)
+
+    num_devices = len(device_names)
+    num_pce = len(pce[0])
+    bar_width = 0.35
+    x_positions = np.arange(num_pce)
+
+    plot2 = fig.add_subplot(132) 
+    plot2.set_title('PCE Scores')
+    plot2.grid()
+    plot2.set_xlabel("Device Name")
+    plot2.set_ylabel("PCE Scores")
+
+    for i, scores in enumerate(pce):
+        plot2.bar(x_positions + i * bar_width, scores, bar_width, label=device_names[i])
+
+    plot2.set_xticks(x_positions + bar_width * (num_devices - 1) / 2)
+    plot2.set_xticklabels(range(1, num_pce + 1))
+    plot2.legend()
+
+    # Plot 3 for the raw CC Scores
+    num_cc = len(raw_scores[0])
+    bar_width = 0.35
+    x_positions = np.arange(num_cc)
+
+    plot3 = fig.add_subplot(133) 
+    plot3.set_title('CC Scores')
+    plot3.grid()
+    plot3.set_xlabel("Device Name")
+    plot3.set_ylabel("CC Scores")
+
+    for i, scores in enumerate(raw_scores):
+        plot3.bar(x_positions + i * bar_width, scores, bar_width, label=device_names[i])
+
+    plot3.set_xticks(x_positions + bar_width * (num_devices - 1) / 2)
+    plot3.set_xticklabels(range(1, num_cc + 1))
+    plot3.legend()
+
+    # Canvas setting for display purposes
     canvas = FigureCanvasTkAgg(fig, master = content_frame)
     content_labels.append(canvas)   
     canvas.draw()
