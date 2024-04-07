@@ -1,6 +1,6 @@
 # Required imports for interface and image processing
 import tkinter as tk
-from tkinter import filedialog, messagebox, simpledialog
+from tkinter import filedialog, messagebox, simpledialog, ttk
 import random
 from PIL import Image, ImageTk, ImageOps
 from PNRU_Extraction import main, check_orientation
@@ -163,6 +163,24 @@ def compute_test():
     else:
         messagebox.showerror('Computation Error', 'Error: Please Select Analysis Image First') # pop up error box
 
+
+def open_help():
+    help_win = tk.Toplevel()
+    help_win.geometry("1500x500")
+    help_win.title("Help Page")
+    label =ttk.Label(help_win, text= "+ This program can be used to help identify the device that captured an image. \n+ You will need to upload the suspect image as well as a series of control images from known devices. \n+ The recommended ammount of control images per device is 50.\n+ The program will present a series of graphs however the verdict will be displayed in text below the central graph.", font=("Helvetica", 16))
+    label.pack(side='top')
+
+def open_settings():
+    help_win = tk.Toplevel()
+    help_win.geometry("1500x500")
+    help_win.title("Settings")
+    label =ttk.Label(help_win, text= "Settings - W.I.P", font=("Helvetica", 16))
+    toggle_btn = tk.Button(help_win, text="Toggle", width=12, relief="raised")
+    toggle_btn.pack(side ='bottom', pady=10)
+    label.pack(side='top', pady=10)
+
+
 # This is a support function used to convert the images to greyscale
 def compute_greyscale(set):
     greyscale_images = []
@@ -213,6 +231,7 @@ def identify_device():
     suspect_images = []
     program_data = {}
 
+    tk.messagebox.showinfo(title='Device Identification', message='Please select the Suspect Image and Control Images using the following windows.')
     # This lets the user choose their suspect image
     while True:
         suspect_path = filedialog.askopenfilenames(title=f"Select Suspect Image", filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.ico")])
@@ -221,108 +240,156 @@ def identify_device():
             display_target_image(suspect_images[0])
             break
         else:
-            messagebox.showerror('File Error', 'Error: Please Select Min. 1 Valid Image')
+            error_prompt = tk.messagebox.askokcancel("File Error", "Error: Please Select Min. 1 Valid Image", icon="warning")
+            if error_prompt:
+                pass
+            else:
+                return
 
     devices_count = simpledialog.askinteger(title="Number Of Devices", prompt="Please enter the number of control devices:")
 
     # User input for each device in their desired dataset
     for i in range(devices_count):
         while True:
-            device_name = simpledialog.askstring(title= f"Device #{i+1} Name", prompt=f"Enter Device {i+1} Name:")
+            device_name = simpledialog.askstring(title= f"Device #{i+1} Name", prompt=f"Enter Device {i+1} Name:", parent=root)
             if device_name in device_names:
                 messagebox.showerror('Upload Error', f'The name {device_name} has already been used!')
             elif len(device_name) < 1:
                 messagebox.showerror('Upload Error', 'The name cannot be blank!')
             else:
                 device_names.append(device_name)
-                file_path = filedialog.askopenfilenames(title=f"Select {device_name} Images", filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.ico")])
-                if file_path:
-                    img_dataset = list(file_path)
-                    for img in img_dataset:
-                        device_images.append(img)
-                    program_data[device_name]=img_dataset
-                else:
-                    messagebox.showerror('File Error', 'Error: Please Select Min. 1 Valid Image')
+                while True:
+                    file_path = filedialog.askopenfilenames(title=f"Select {device_name} Images", filetypes=[("Image files", "*.png *.jpg *.jpeg *.gif *.bmp *.ico")])
+                    if file_path:
+                        img_dataset = list(file_path)
+                        for img in img_dataset:
+                            device_images.append(img)
+                        program_data[device_name]=img_dataset
+                    else:
+                        error_prompt = tk.messagebox.askokcancel("File Error", "Error: Please Select Min. 1 Valid Image", icon="warning")
+                        if error_prompt:
+                            continue
+                        else:
+                            return
+                    break
+                    
                 break
         display_image_sample(device_images)
 
-    while True:
-        test_runs = simpledialog.askinteger(title="Number Of Test Rounds", prompt="Please enter the number of rounds of testing desired \n(Minimum 50 Recommended):")
-        if test_runs == 0:
-            messagebox.showerror('Quantity Error!', 'The Quantity Must Be Greater Than 0')
-        else:
-            break
+    continue_prompt = tk.messagebox.askquestion("Begin Testing", "Would you like to begin testing?", icon="question")
+    if continue_prompt == "yes":
+        pass
+    else:
+        return
+
+    # The below code is depricated and is no longer required for the program to run efficeintly
+    # while True:
+    #     test_runs = simpledialog.askinteger(title="Number Of Test Rounds", prompt="Please enter the number of rounds of testing desired \n(Minimum 50 Recommended):")
+    #     if test_runs == 0:
+    #         messagebox.showerror('Quantity Error!', 'The Quantity Must Be Greater Than 0')
+    #     else:
+    #         break
 
     # Calls the function to calculate the PRNU values and Cross Correlate the results
-    scores, pce, raw_scores = ident_main(device_names, devices_count, program_data, test_runs, suspect_images)
+    scores, pce, raw_scores = ident_main(device_names, devices_count, program_data, 1, suspect_images)
 
     # Work out algorithm chosen suspect device
-    index_max = scores.index(max(scores))
-    suspected_device_name = device_names[index_max]
-
-    # Plots the data on a graph
-    print(pce)
-    plot(device_names, scores, pce, raw_scores)
+    # insert if lookup here for pce 60
+    flat_pce = [value for sublist in pce for value in sublist]
+    max_pce = max(flat_pce)
+    if max_pce > 60:
+        index_max = scores.index(max(scores))
+        suspected_device_name = device_names[index_max]
+        suspect_device_label = tk.Label(content_frame, text=f"The program predicts the suspect device is: {suspected_device_name}", font=("Helvetica", 16))
+        plot(device_names, scores, pce, raw_scores, True)
+    else:
+        suspect_device_label = tk.Label(content_frame, text=f"No Match Found In Control Dataset \nAcceptance Threshold Not Met", font=("Helvetica", 16))
+        plot(device_names, scores, pce, raw_scores, False)  
     
     # Creates the label that states the suspected device
-    suspect_device_label = tk.Label(content_frame, text=f"The program predicts the suspect device is: {suspected_device_name}", font=("Helvetica", 16))
     suspect_device_label.pack()
 
 # This function is used for plotting the graph of the PRNU Values
-def plot(device_names, scores, pce, raw_scores):
+def plot(device_names, scores, pce, raw_scores, match_found):
 
     fig = Figure(figsize = (20, 5))
+    if match_found:
+        # Plot 1 for CC Values 
+        plot1 = fig.add_subplot(131)
+        plot1.set_title('Suspect Device Likelihood')
+        plot1.grid()
+        plot1.set_xlabel("Device Name")
+        plot1.set_ylabel("Cross Correlation Value")
+        plot1.bar(device_names, scores)
 
-    # Plot 1 for CC Values 
-    plot1 = fig.add_subplot(131)
-    plot1.set_title('Suspect Device Likelihood')
-    plot1.grid()
-    plot1.set_xlabel("Device Name")
-    plot1.set_ylabel("Cross Correlation Value")
-    plot1.bar(device_names, scores)
+        # Plot 2 for PCE scores
+        plot2_names = []
 
-    # Plot 2 for PCE scores
-    plot2_names = []
+        for name in device_names:
+            for i in range(len(pce[0])):
+                plot2_names.append(name)
 
-    for name in device_names:
-        for i in range(len(pce[0])):
-            plot2_names.append(name)
+        num_devices = len(device_names)
+        num_pce = len(pce[0])
+        bar_width = 0.35
+        x_positions = np.arange(num_pce)
 
-    num_devices = len(device_names)
-    num_pce = len(pce[0])
-    bar_width = 0.35
-    x_positions = np.arange(num_pce)
+        plot2 = fig.add_subplot(132) 
+        plot2.set_title('PCE Values')
+        plot2.grid()
+        plot2.set_xlabel("Image")
+        plot2.set_ylabel("Peak-To-Correlation Energy")
+        plot2.axhline(y=60, color='r', linestyle='-', label='Acceptance Threshold')
 
-    plot2 = fig.add_subplot(132) 
-    plot2.set_title('PCE Scores')
-    plot2.grid()
-    plot2.set_xlabel("Device Name")
-    plot2.set_ylabel("PCE Scores")
+        for i, scores in enumerate(pce):
+            plot2.bar(x_positions + i * bar_width, scores, bar_width, label=device_names[i])
 
-    for i, scores in enumerate(pce):
-        plot2.bar(x_positions + i * bar_width, scores, bar_width, label=device_names[i])
+        plot2.set_xticks(x_positions + bar_width * (num_devices - 1) / 2)
+        plot2.set_xticklabels(range(1, num_pce + 1))
+        plot2.legend()
 
-    plot2.set_xticks(x_positions + bar_width * (num_devices - 1) / 2)
-    plot2.set_xticklabels(range(1, num_pce + 1))
-    plot2.legend()
+        # Plot 3 for the raw CC Scores
+        num_cc = len(raw_scores[0])
+        bar_width = 0.35
+        x_positions = np.arange(num_cc)
 
-    # Plot 3 for the raw CC Scores
-    num_cc = len(raw_scores[0])
-    bar_width = 0.35
-    x_positions = np.arange(num_cc)
+        plot3 = fig.add_subplot(133) 
+        plot3.set_title('CC Scores')
+        plot3.grid()
+        plot3.set_xlabel("Device Name")
+        plot3.set_ylabel("CC Scores")
 
-    plot3 = fig.add_subplot(133) 
-    plot3.set_title('CC Scores')
-    plot3.grid()
-    plot3.set_xlabel("Device Name")
-    plot3.set_ylabel("CC Scores")
+        for i, scores in enumerate(raw_scores):
+            plot3.bar(x_positions + i * bar_width, scores, bar_width, label=device_names[i])
 
-    for i, scores in enumerate(raw_scores):
-        plot3.bar(x_positions + i * bar_width, scores, bar_width, label=device_names[i])
+        plot3.set_xticks(x_positions + bar_width * (num_devices - 1) / 2)
+        plot3.set_xticklabels(range(1, num_cc + 1))
+        plot3.legend()
+    else:
+        plot2_names = []
 
-    plot3.set_xticks(x_positions + bar_width * (num_devices - 1) / 2)
-    plot3.set_xticklabels(range(1, num_cc + 1))
-    plot3.legend()
+        for name in device_names:
+            for i in range(len(pce[0])):
+                plot2_names.append(name)
+
+        num_devices = len(device_names)
+        num_pce = len(pce[0])
+        bar_width = 0.35
+        x_positions = np.arange(num_pce)
+
+        plot2 = fig.add_subplot(111) 
+        plot2.set_title('PCE Values')
+        plot2.grid()
+        plot2.set_xlabel("Image")
+        plot2.set_ylabel("Peak-To-Correlation Energy")
+        plot2.axhline(y=60, color='r', linestyle='-', label='Acceptance Threshold')
+
+        for i, scores in enumerate(pce):
+            plot2.bar(x_positions + i * bar_width, scores, bar_width, label=device_names[i])
+
+        plot2.set_xticks(x_positions + bar_width * (num_devices - 1) / 2)
+        plot2.set_xticklabels(range(1, num_pce + 1))
+        plot2.legend()
 
     # Canvas setting for display purposes
     canvas = FigureCanvasTkAgg(fig, master = content_frame)
@@ -351,6 +418,12 @@ def create_buttons():
 
     reset_btn = tk.Button(main_button_frame, text="Reset Selection", command=reset_all, height= 2)
     reset_btn.grid(row=1, column=1)
+
+    help_btn = tk.Button(main_button_frame, text="Help", command=open_help, height= 2, width=10)
+    help_btn.grid(row=1, column=2)
+
+    settings_btn = tk.Button(main_button_frame, text="Settings", command=open_settings, height= 2, width=10)
+    settings_btn.grid(row=1, column=3)    
 
     # compute_btn = tk.Button(main_button_frame, text="Compute (Greyscale)", command=compute_test)
     # compute_btn.grid(row=1, column=3)
