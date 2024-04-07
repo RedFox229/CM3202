@@ -124,15 +124,15 @@ def configure_environment(device_names, program_dataset):
     smallest_dataset_size = calculate_dataset_size(program_dataset)
     return devices_count, smallest_dataset_size
 
-def calculate(device_names, number_of_devices, program_dataset, suspect_image_paths, suspect_name):
+def calculate(device_names, number_of_devices, program_dataset, suspect_image_paths):
     devices_count , smallest_dataset_size = configure_environment(device_names, program_dataset)
     load_equal_data(smallest_dataset_size, devices_count, program_dataset)
     folds = create_equal_sized_folds(smallest_dataset_size, smallest_dataset_size, number_of_devices, devices_count)
     get_fold_stats(folds, number_of_devices)
     #print(folds)
 
-    correct = 0
-    incorrect = 0
+    # correct = 0
+    # incorrect = 0
 
     for fold in folds:
         to_write = [] # path (of suspect image), actual class, predicted class, class scores
@@ -175,16 +175,16 @@ def calculate(device_names, number_of_devices, program_dataset, suspect_image_pa
         
         index_max = avg_scores.index(max(avg_scores))
         predicted_identity = (devices[index_max])
-        print(f"Suspect Device : {suspect_name}  \nProgram Predicted Match: {predicted_identity}")
+        print(f"Suspect Device : Unknown \nProgram Predicted Match: {predicted_identity}")
         print(avg_scores)
         # print(f"Scores: \nD3500: {average(scores[0])}   Drone: {average(scores[1])}   iPhone 8: {average(scores[2])}   iPhone 13: {average(scores[3])}   Samsung Galaxy S7 A: {average(scores[4])}   Samsung Galaxy S7 B: {average(scores[5])}")
         # print("--------------------------------------------------------------------------------------------------------------------------------------------------------------")
-        if suspect_name == predicted_identity:
-            correct += 1
-            verdict = "Correct"
-        else:
-            incorrect +=1
-            verdict = "Incorrect"
+        # if suspect_name == predicted_identity:
+        #     correct += 1
+        #     verdict = "Correct"
+        # else:
+        #     incorrect +=1
+        #     verdict = "Incorrect"
         # to_write.append([suspect_image_path, labels[suspect_image_path], predicted_identity, average(scores[0]), average(scores[1]), average(scores[2]), average(scores[3]), average(scores[4]), average(scores[5]), verdict])
         # full_dataset.append(to_write[0])
         # plt.xlabel("Device")
@@ -192,10 +192,15 @@ def calculate(device_names, number_of_devices, program_dataset, suspect_image_pa
         # plt.bar(device_names, avg_scores)
         # plt.grid()
         # plt.show()
-    return correct, incorrect, avg_scores
-
-
-def main(device_names, number_of_devices, program_dataset, test_runs, suspect_image_paths, suspect_name):
-    for i in range(test_runs):
-        correct, incorrect, avg_scores = calculate(device_names, number_of_devices, program_dataset, suspect_image_paths, suspect_name)
     return avg_scores
+
+
+def main(device_names, number_of_devices, program_dataset, test_runs, suspect_image_paths):
+    run_average = np.zeros(number_of_devices)
+    for i in range(test_runs):
+        avg_scores = calculate(device_names, number_of_devices, program_dataset, suspect_image_paths)
+        np_avg_scores = np.array(avg_scores)
+        run_average = run_average + np_avg_scores
+    final_scores = run_average/test_runs
+    final_scores = final_scores.tolist()
+    return final_scores
