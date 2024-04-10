@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 import random
 from PIL import Image, ImageTk, ImageOps
-from PNRU_Extraction import main, check_orientation
+from PRNU_Extraction import main, check_orientation
 from Cross_Correlation_Functions import pce, crosscorr_2d
 from Device_Identification import main as ident_main
 import matplotlib.pyplot as plt
@@ -163,7 +163,6 @@ def compute_test():
     else:
         messagebox.showerror('Computation Error', 'Error: Please Select Analysis Image First') # pop up error box
 
-
 def open_help():
     help_win = tk.Toplevel()
     help_win.geometry("1500x500")
@@ -179,7 +178,6 @@ def open_settings():
     toggle_btn = tk.Button(help_win, text="Toggle", width=12, relief="raised")
     toggle_btn.pack(side ='bottom', pady=10)
     label.pack(side='top', pady=10)
-
 
 # This is a support function used to convert the images to greyscale
 def compute_greyscale(set):
@@ -302,9 +300,11 @@ def identify_device():
         index_max = scores.index(max(scores))
         suspected_device_name = device_names[index_max]
         suspect_device_label = tk.Label(content_frame, text=f"The program predicts the suspect device is: {suspected_device_name}", font=("Helvetica", 16))
+        all_labels.append(suspect_device_label)
         plot(device_names, scores, pce, raw_scores, True)
     else:
         suspect_device_label = tk.Label(content_frame, text=f"No Match Found In Control Dataset \nAcceptance Threshold Not Met", font=("Helvetica", 16))
+        all_labels.append(suspect_device_label)
         plot(device_names, scores, pce, raw_scores, False)  
     
     completion_time = time.time()
@@ -312,6 +312,7 @@ def identify_device():
     minutes = run_time // 60
     seconds = run_time % 60
     run_time_label = tk.Label(content_frame, text=f"Testing Completed In: {round(minutes)} Minutes {int(seconds)} Seconds.", font=("Helvetica", 8))
+    all_labels.append(run_time_label)
     
     # Creates the label that states the suspected device
     suspect_device_label.pack(side ='top', pady=10)
