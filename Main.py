@@ -6,11 +6,11 @@ from PIL import Image, ImageTk, ImageOps
 from PNRU_Extraction import main, check_orientation
 from Cross_Correlation_Functions import pce, crosscorr_2d
 from Device_Identification import main as ident_main
-from scipy.signal import correlate2d
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg) 
 import numpy as np
+import time
 
 # Setting the size the image thumbnails will have
 size = 180, 180
@@ -291,6 +291,7 @@ def identify_device():
     #         break
 
     # Calls the function to calculate the PRNU values and Cross Correlate the results
+    start_time = time.time()
     scores, pce, raw_scores = ident_main(device_names, devices_count, program_data, 1, suspect_images)
 
     # Work out algorithm chosen suspect device
@@ -306,8 +307,15 @@ def identify_device():
         suspect_device_label = tk.Label(content_frame, text=f"No Match Found In Control Dataset \nAcceptance Threshold Not Met", font=("Helvetica", 16))
         plot(device_names, scores, pce, raw_scores, False)  
     
+    completion_time = time.time()
+    run_time = completion_time - start_time
+    minutes = run_time // 60
+    seconds = run_time % 60
+    run_time_label = tk.Label(content_frame, text=f"Testing Completed In: {round(minutes)} Minutes {int(seconds)} Seconds.", font=("Helvetica", 8))
+    
     # Creates the label that states the suspected device
-    suspect_device_label.pack()
+    suspect_device_label.pack(side ='top', pady=10)
+    run_time_label.pack(side ='bottom', pady=10)
 
 # This function is used for plotting the graph of the PRNU Values
 def plot(device_names, scores, pce, raw_scores, match_found):
