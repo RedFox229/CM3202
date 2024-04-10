@@ -1,7 +1,7 @@
 import random
 from PIL import Image, ImageOps
-from PNRU_Extraction import noise_extract as prnu
-from PNRU_Extraction import check_orientation, cut_ctr
+from PRNU_Extraction import noise_extract as prnu
+from PRNU_Extraction import check_orientation, cut_ctr
 from Cross_Correlation_Functions import pce, crosscorr_2d
 import numpy as np
 
@@ -197,6 +197,9 @@ def calculate(device_names, number_of_devices, program_dataset, suspect_image_pa
 
 
 def main(device_names, number_of_devices, program_dataset, test_runs, suspect_image_paths):
+    labels.clear()
+    paths.clear()
+    devices.clear()
     run_average = np.zeros(number_of_devices)
     for i in range(test_runs):
         avg_scores, pce, scores = calculate(device_names, number_of_devices, program_dataset, suspect_image_paths)
