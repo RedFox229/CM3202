@@ -3,12 +3,6 @@ import pywt.data
 import numpy as np
 from PIL import Image
 from scipy.ndimage import filters
-import cv2
-from multiprocessing import Pool, cpu_count
-from tqdm import tqdm
-from numpy.fft import fft2, ifft2
-from scipy.ndimage import filters
-from sklearn.metrics import roc_curve, auc
 
 return_lst = []
 fingerprint = []
