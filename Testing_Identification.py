@@ -1,8 +1,8 @@
 import csv
 import random
 from PIL import Image, ImageOps
-from PNRU_Extraction import noise_extract as prnu
-from PNRU_Extraction import check_orientation, cut_ctr
+from PRNU_Extraction import noise_extract as prnu
+from PRNU_Extraction import check_orientation, cut_ctr
 from Cross_Correlation_Functions import pce, crosscorr_2d
 import numpy as np
 import openpyxl as pyxl
